@@ -16,6 +16,18 @@ const initialCode = `export default () => {
   );
 }`;
 
+const initialCodeComplex = `const LABEL = "Hello"
+
+function alertClick() {
+  alert("click")
+}
+
+export default () => {
+  return (
+    <Button onClick={alertClick}>{LABEL}</Button>
+  )
+}`;
+
 const initialCodeEl = `<Button onClick={() => alert("click")}>Hello</Button>`;
 const initialCodeSum = `2 + 5`;
 
@@ -23,6 +35,10 @@ const CodeOnly = () => {
   const params = useView({initialCode, scope: {Button, SIZE}});
   const paramsEl = useView({initialCode: initialCodeEl, scope: {Button, SIZE}});
   const paramsSum = useView({initialCode: initialCodeSum});
+  const paramsComplex = useView({
+    initialCode: initialCodeComplex,
+    scope: {Button, SIZE},
+  });
   return (
     <Layout>
       <H1>Live Code Editor</H1>
@@ -36,6 +52,12 @@ const CodeOnly = () => {
       </CompilerBox>
       <Editor {...params.editorProps} />
       <Error {...params.errorProps} />
+      <hr />
+      <CompilerBox>
+        <Compiler {...paramsComplex.compilerProps} />
+      </CompilerBox>
+      <Editor {...paramsComplex.editorProps} />
+      <Error {...paramsComplex.errorProps} />
       <P>
         You can create your UI or re-use components from react-view (Editor,
         Error...). Optionally you can also add the action buttons:
