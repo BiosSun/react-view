@@ -51,7 +51,7 @@ const evalCode = (
   const scopeKeys = Object.keys(scope);
   const scopeValues = Object.values(scope);
   //@ts-ignore
-  const res = new Function('React', ...scopeKeys, `return ${resultCode}`);
+  const res = new Function('React', ...scopeKeys, `${resultCode}`);
   return res(React, ...scopeValues);
 };
 

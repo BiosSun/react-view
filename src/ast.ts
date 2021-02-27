@@ -88,25 +88,11 @@ export const transformBeforeCompilation = (
 ) => {
   try {
     traverse(ast, {
-      VariableDeclaration(path) {
-        if (path.parent.type === 'Program') {
-          //@ts-ignore
-          path.replaceWith(path.node.declarations[0].init);
-        }
-      },
+      // remove all imports
       ImportDeclaration(path) {
         path.remove();
       },
-      ExportDefaultDeclaration(path) {
-        if (
-          path.node.declaration.type === 'ArrowFunctionExpression' ||
-          path.node.declaration.type === 'FunctionDeclaration'
-        ) {
-          path.replaceWith(path.node.declaration);
-        } else {
-          path.remove();
-        }
-      },
+
       // adds internal state instrumentation through __reactViewOnChange callback
       JSXElement(path) {
         if (
@@ -146,7 +132,47 @@ export const transformBeforeCompilation = (
             });
         }
       },
+
+      Program(path) {
+        const indexOfExportDefaultDeclaration = path.node.body.findIndex(node =>
+          t.isExportDefaultDeclaration(node)
+        );
+        let decarationPath: NodePath<
+          | t.ExportDefaultDeclaration
+          | t.ExpressionStatement
+          | t.VariableDeclaration
+          | t.FunctionDeclaration
+          | t.ClassDeclaration
+        >;
+        if (indexOfExportDefaultDeclaration !== -1) {
+          // @ts-ignore
+          decarationPath = path.get(`body.${indexOfExportDefaultDeclaration}`);
+        } else if (path.node.body.length) {
+          // @ts-ignore
+          decarationPath = path.get(`body.${path.node.body.length - 1}`);
+        } else {
+          return;
+        }
+        let expression;
+        if (decarationPath.isExportDefaultDeclaration()) {
+          expression = decarationPath.node.declaration;
+          if (!t.isExpression(expression)) {
+            expression = t.toExpression(expression as any);
+          }
+        } else if (decarationPath.isExpressionStatement()) {
+          expression = decarationPath.node.expression;
+        } else if (decarationPath.isVariableDeclaration()) {
+          expression = decarationPath.node.declarations[0].init;
+        } else {
+          expression = t.toExpression(decarationPath.node as any);
+        }
+        const returnStatement = t.returnStatement(expression as any);
+        decarationPath.parentPath.pushContainer('body', returnStatement);
+        decarationPath.remove();
+      },
     });
+
+    return ast;
   } catch (e) {}
   return ast;
 };
